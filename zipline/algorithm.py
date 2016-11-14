@@ -1741,11 +1741,15 @@ class TradingAlgorithm(object):
         if not self._can_order_asset(asset):
             return None
 
+        amount = self._calculate_order_percent_amount(asset, percent)
+        return self.order(asset, amount,
+                          limit_price=limit_price,
+                          stop_price=stop_price,
+                          style=style)
+
+    def _calculate_order_percent_amount(self, asset, percent):
         value = self.portfolio.portfolio_value * percent
-        return self.order_value(asset, value,
-                                limit_price=limit_price,
-                                stop_price=stop_price,
-                                style=style)
+        return self._calculate_order_value_amount(asset, value)
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
@@ -1807,18 +1811,18 @@ class TradingAlgorithm(object):
         if not self._can_order_asset(asset):
             return None
 
+        amount = self._calculate_order_target_amount(asset, target)
+        return self.order(asset, amount,
+                          limit_price=limit_price,
+                          stop_price=stop_price,
+                          style=style)
+
+    def _calculate_order_target_amount(self, asset, target):
         if asset in self.portfolio.positions:
             current_position = self.portfolio.positions[asset].amount
-            req_shares = target - current_position
-            return self.order(asset, req_shares,
-                              limit_price=limit_price,
-                              stop_price=stop_price,
-                              style=style)
-        else:
-            return self.order(asset, target,
-                              limit_price=limit_price,
-                              stop_price=stop_price,
-                              style=style)
+            target -= current_position
+
+        return target
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
@@ -1882,10 +1886,11 @@ class TradingAlgorithm(object):
             return None
 
         target_amount = self._calculate_order_value_amount(asset, target)
-        return self.order_target(asset, target_amount,
-                                 limit_price=limit_price,
-                                 stop_price=stop_price,
-                                 style=style)
+        amount = self._calculate_order_target_amount(asset, target_amount)
+        return self.order(asset, amount,
+                          limit_price=limit_price,
+                          stop_price=stop_price,
+                          style=style)
 
     @api_method
     @disallowed_in_before_trading_start(OrderInBeforeTradingStart())
@@ -1944,11 +1949,15 @@ class TradingAlgorithm(object):
         if not self._can_order_asset(asset):
             return None
 
-        target_value = self.portfolio.portfolio_value * target
-        return self.order_target_value(asset, target_value,
-                                       limit_price=limit_price,
-                                       stop_price=stop_price,
-                                       style=style)
+        amount = self._calculate_order_target_percent_amount(asset, target)
+        return self.order(asset, amount,
+                          limit_price=limit_price,
+                          stop_price=stop_price,
+                          style=style)
+
+    def _calculate_order_target_percent_amount(self, asset, target):
+        target_amount = self._calculate_order_percent_amount(asset, target)
+        return self._calculate_order_target_amount(asset, target_amount)
 
     @error_keywords(sid='Keyword argument `sid` is no longer supported for '
                         'get_open_orders. Use `asset` instead.')
