@@ -1401,6 +1401,12 @@ class TradingAlgorithm(object):
         if not self._can_order_asset(asset):
             return None
 
+        amount, style = self._calculate_order(asset, amount,
+                                              limit_price, stop_price, style)
+        return self.blotter.order(asset, amount, style)
+
+    def _calculate_order(self, asset, amount,
+                         limit_price=None, stop_price=None, style=None):
         # Truncate to the integer share count that's either within .0001 of
         # amount or closer to zero.
         # E.g. 3.9999 -> 4.0; 5.5 -> 5.0; -5.5 -> -5.0
@@ -1418,7 +1424,7 @@ class TradingAlgorithm(object):
         style = self.__convert_order_params_for_blotter(limit_price,
                                                         stop_price,
                                                         style)
-        return self.blotter.order(asset, amount, style)
+        return amount, style
 
     def validate_order_params(self,
                               asset,
